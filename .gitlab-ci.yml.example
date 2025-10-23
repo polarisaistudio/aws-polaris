@@ -1,0 +1,91 @@
+image:
+  name: hashicorp/terraform:1.6
+  entrypoint: [""]
+
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR}
+  TF_STATE_NAME: default
+
+cache:
+  paths:
+    - ${TF_ROOT}/.terraform
+
+stages:
+  - validate
+  - build
+  - plan
+  - apply
+  - destroy
+
+before_script:
+  - cd ${TF_ROOT}
+  - terraform --version
+  - terraform init
+
+# Validate Terraform configuration
+validate:
+  stage: validate
+  script:
+    - terraform fmt -check -recursive
+    - terraform validate
+  only:
+    - merge_requests
+    - main
+
+# Build Lambda function
+build-lambda:
+  stage: build
+  image: golang:1.21
+  script:
+    - cd lambda/forwarder
+    - go mod download
+    - make build
+  artifacts:
+    paths:
+      - lambda/forwarder/lambda.zip
+      - lambda/forwarder/bootstrap
+    expire_in: 1 day
+  only:
+    - merge_requests
+    - main
+
+# Plan changes (for merge requests)
+plan:
+  stage: plan
+  dependencies:
+    - build-lambda
+  script:
+    - terraform plan -out=tfplan -input=false
+  artifacts:
+    name: plan
+    paths:
+      - ${TF_ROOT}/tfplan
+    expire_in: 1 day
+  only:
+    - merge_requests
+
+# Apply changes (on main branch only)
+apply:
+  stage: apply
+  dependencies:
+    - build-lambda
+  script:
+    - terraform apply -auto-approve -input=false
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    on_stop: destroy
+
+# Destroy infrastructure (manual only)
+destroy:
+  stage: destroy
+  script:
+    - terraform destroy -auto-approve -input=false
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    action: stop
