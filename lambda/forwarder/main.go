@@ -171,6 +171,9 @@ func forwardEmail(ctx context.Context, sesNotification events.SimpleEmailService
 	rawEmail := prepareForwardedEmail(sesNotification, emailContent, recipient)
 
 	_, err := sesClient.SendEmail(ctx, &sesv2.SendEmailInput{
+		Destination: &sestypes.Destination{
+			ToAddresses: []string{recipient},
+		},
 		Content: &sestypes.EmailContent{
 			Raw: &sestypes.RawMessage{
 				Data: rawEmail,
@@ -193,63 +196,14 @@ func prepareForwardedEmail(sesNotification events.SimpleEmailService, emailConte
 
 	log.Printf("Successfully parsed email")
 
+	// Read the body but don't modify it
 	bodyBytes, err := io.ReadAll(msg.Body)
 	if err != nil {
 		log.Printf("Warning: Failed to read body: %v", err)
 		return emailContent
 	}
 
-	body := string(bodyBytes)
-	log.Printf("Original body length: %d bytes", len(body))
-
-	senderFooter := fmt.Sprintf("\n\n---\nForwarded from: %s\nOriginal to: %s", originalFrom, originalTo)
-
-	modifiedBody := body
-
-	lastClosingBoundary := strings.LastIndex(body, "\n--")
-	if lastClosingBoundary != -1 {
-		afterNewline := lastClosingBoundary + 1
-		nextNewline := strings.Index(body[afterNewline:], "\n")
-		var boundaryEnd int
-		if nextNewline == -1 {
-			boundaryEnd = len(body)
-		} else {
-			boundaryEnd = afterNewline + nextNewline
-		}
-
-		boundaryLine := body[afterNewline:boundaryEnd]
-		if strings.HasSuffix(strings.TrimSpace(boundaryLine), "--") {
-			log.Printf("Found closing MIME boundary at position %d: %s", lastClosingBoundary, boundaryLine)
-			modifiedBody = body[:lastClosingBoundary] + senderFooter + "\n" + body[lastClosingBoundary:]
-		}
-	}
-
-	if !strings.Contains(modifiedBody, senderFooter) {
-		lastClosingBoundary := strings.LastIndex(body, "\r\n--")
-		if lastClosingBoundary != -1 {
-			afterCRLF := lastClosingBoundary + 2
-			nextCRLF := strings.Index(body[afterCRLF:], "\r\n")
-			var boundaryEnd int
-			if nextCRLF == -1 {
-				boundaryEnd = len(body)
-			} else {
-				boundaryEnd = afterCRLF + nextCRLF
-			}
-
-			boundaryLine := body[afterCRLF:boundaryEnd]
-			if strings.HasSuffix(strings.TrimSpace(boundaryLine), "--") {
-				log.Printf("Found closing MIME boundary (CRLF) at position %d: %s", lastClosingBoundary, boundaryLine)
-				modifiedBody = body[:lastClosingBoundary] + "\r\n" + senderFooter + body[lastClosingBoundary:]
-			}
-		}
-	}
-
-	if !strings.Contains(modifiedBody, senderFooter) {
-		log.Printf("No closing MIME boundary found, appending footer to end")
-		modifiedBody = body + senderFooter
-	}
-
-	log.Printf("Modified body length: %d bytes", len(modifiedBody))
+	log.Printf("Original body length: %d bytes", len(bodyBytes))
 
 	var headers bytes.Buffer
 
@@ -257,7 +211,6 @@ func prepareForwardedEmail(sesNotification events.SimpleEmailService, emailConte
 		"return-path":            true,
 		"dkim-signature":         true,
 		"received":               true,
-		"date":                   true,
 		"authentication-results": true,
 		"reply-to":               true,
 		"from":                   true,
@@ -265,6 +218,7 @@ func prepareForwardedEmail(sesNotification events.SimpleEmailService, emailConte
 		"content-length":         true,
 	}
 
+	// Preserve all headers except the ones we need to replace
 	for k, vals := range msg.Header {
 		lowerK := strings.ToLower(k)
 		if headersToSkip[lowerK] {
@@ -276,6 +230,7 @@ func prepareForwardedEmail(sesNotification events.SimpleEmailService, emailConte
 		}
 	}
 
+	// Add required headers
 	headers.WriteString(fmt.Sprintf("From: %s\r\n", appConfig.FromEmail))
 	headers.WriteString(fmt.Sprintf("To: %s\r\n", recipient))
 	headers.WriteString(fmt.Sprintf("X-Original-From: %s\r\n", originalFrom))
@@ -290,10 +245,11 @@ func prepareForwardedEmail(sesNotification events.SimpleEmailService, emailConte
 		log.Printf("Skipping Reply-To (SES sandbox mode)")
 	}
 
+	// Reconstruct the email with modified headers and original body
 	var result bytes.Buffer
 	result.Write(headers.Bytes())
 	result.WriteString("\r\n")
-	result.WriteString(modifiedBody)
+	result.Write(bodyBytes)
 
 	log.Printf("Email prepared - total: %d bytes", result.Len())
 	return result.Bytes()

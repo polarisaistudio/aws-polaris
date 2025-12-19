@@ -65,7 +65,7 @@ variable "github_pages_repo" {
 variable "preserve_reply_to" {
   description = "Preserve Reply-To header with original sender (requires SES production mode, not sandbox). Set to true after getting SES production access."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "tags" {
@@ -77,4 +77,44 @@ variable "tags" {
     ManagedBy   = "Terraform"
     Domain      = "polarisaistudio.com"
   }
+}
+
+variable "vercel_enabled" {
+  description = "Enable Vercel wildcard subdomain DNS configuration (*.app.domain.com)"
+  type        = bool
+  default     = true
+}
+
+variable "vercel_subdomain" {
+  description = "Subdomain to delegate to Vercel (e.g., 'app' creates *.app.polarisaistudio.com)"
+  type        = string
+  default     = "ams"
+}
+
+variable "vercel_nameservers" {
+  description = "Vercel nameservers for NS delegation. Get these from Vercel project settings."
+  type        = list(string)
+  default     = ["ns1.vercel-dns.com", "ns2.vercel-dns.com"]
+}
+
+# ==============================================================================
+# Resend Configuration
+# ==============================================================================
+
+variable "resend_enabled" {
+  description = "Enable Resend email DNS configuration for sending emails via subdomain"
+  type        = bool
+  default     = true
+}
+
+variable "resend_subdomain" {
+  description = "Subdomain for Resend email (e.g., 'mail' creates mail.polarisaistudio.com)"
+  type        = string
+  default     = "mail"
+}
+
+variable "resend_dkim_key" {
+  description = "DKIM public key from Resend dashboard. Get this from Resend after adding your domain."
+  type        = string
+  default     = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDE21Hhd1tNJgVHBeaT4gZ8rVAfsgRbepNxAip3pvOdG/cwWGg3AGDrdKXQXiqerr5TX9NMfxbH+bj1IuQdp3VEmClgrXi0DtmZyfy5ZknzUHwT5g9cmMjAFTC++TWvUHBgC/JPr2cRBuMnMMVimbvg0aKIOptVTMqy5jjGmWAkjQIDAQAB"
 }

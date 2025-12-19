@@ -99,3 +99,56 @@ resource "aws_route53_record" "github_pages_www" {
   ttl     = 300
   records = [var.github_pages_repo]
 }
+
+# ==============================================================================
+# Vercel DNS Records (Wildcard Subdomain Support)
+# ==============================================================================
+# Delegates a subdomain (e.g., app.domain.com) to Vercel's nameservers
+# This enables wildcard SSL certificates for *.app.domain.com
+# Method: Full NS Delegation (recommended by Vercel for wildcard domains)
+
+# NS record to delegate subdomain to Vercel nameservers
+resource "aws_route53_record" "vercel_ns_delegation" {
+  count   = var.vercel_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "${var.vercel_subdomain}.${var.domain_name}"
+  type    = "NS"
+  ttl     = 300
+  records = var.vercel_nameservers
+}
+
+# ==============================================================================
+# Resend DNS Records
+# ==============================================================================
+# Configures DNS records for sending email via Resend using a subdomain
+# (e.g., mail.polarisaistudio.com)
+
+# MX Record for Resend (send.mail.domain.com)
+resource "aws_route53_record" "resend_mx" {
+  count   = var.resend_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "send.${var.resend_subdomain}.${var.domain_name}"
+  type    = "MX"
+  ttl     = 300
+  records = ["10 feedback-smtp.us-east-1.amazonses.com"]
+}
+
+# SPF Record for Resend (send.mail.domain.com)
+resource "aws_route53_record" "resend_spf" {
+  count   = var.resend_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "send.${var.resend_subdomain}.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 300
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+# DKIM Record for Resend (resend._domainkey.mail.domain.com)
+resource "aws_route53_record" "resend_dkim" {
+  count   = var.resend_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "resend._domainkey.${var.resend_subdomain}.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 300
+  records = [var.resend_dkim_key]
+}

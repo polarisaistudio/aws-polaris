@@ -25,4 +25,14 @@ module "dns" {
   ses_verification_token = module.email_forwarding.ses_verification_token
   dkim_tokens            = module.email_forwarding.dkim_tokens
   github_pages_repo      = var.github_pages_repo
+
+  # Vercel configuration
+  vercel_enabled     = var.vercel_enabled
+  vercel_subdomain   = var.vercel_subdomain
+  vercel_nameservers = var.vercel_nameservers
+
+  # Resend configuration
+  resend_enabled   = var.resend_enabled
+  resend_subdomain = var.resend_subdomain
+  resend_dkim_key  = var.resend_dkim_key
 }

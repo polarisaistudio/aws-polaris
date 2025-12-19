@@ -23,3 +23,43 @@ variable "github_pages_repo" {
   type        = string
   default     = ""
 }
+
+variable "vercel_enabled" {
+  description = "Enable Vercel wildcard subdomain DNS configuration"
+  type        = bool
+  default     = true
+}
+
+variable "vercel_subdomain" {
+  description = "Subdomain to delegate to Vercel (e.g., 'app' for *.app.domain.com)"
+  type        = string
+  default     = "ams"
+}
+
+variable "vercel_nameservers" {
+  description = "Vercel nameservers for NS delegation"
+  type        = list(string)
+  default     = ["ns1.vercel-dns.com", "ns2.vercel-dns.com"]
+}
+
+# ==============================================================================
+# Resend Configuration
+# ==============================================================================
+
+variable "resend_enabled" {
+  description = "Enable Resend email DNS configuration"
+  type        = bool
+  default     = false
+}
+
+variable "resend_subdomain" {
+  description = "Subdomain for Resend email (e.g., 'mail' for mail.domain.com)"
+  type        = string
+  default     = "mail"
+}
+
+variable "resend_dkim_key" {
+  description = "DKIM public key from Resend (the 'p=' value without quotes)"
+  type        = string
+  default     = ""
+}
