@@ -171,9 +171,6 @@ func forwardEmail(ctx context.Context, sesNotification events.SimpleEmailService
 	rawEmail := prepareForwardedEmail(sesNotification, emailContent, recipient)
 
 	_, err := sesClient.SendEmail(ctx, &sesv2.SendEmailInput{
-		Destination: &sestypes.Destination{
-			ToAddresses: []string{recipient},
-		},
 		Content: &sestypes.EmailContent{
 			Raw: &sestypes.RawMessage{
 				Data: rawEmail,
@@ -211,6 +208,7 @@ func prepareForwardedEmail(sesNotification events.SimpleEmailService, emailConte
 		"return-path":            true,
 		"dkim-signature":         true,
 		"received":               true,
+		"date":                   true,
 		"authentication-results": true,
 		"reply-to":               true,
 		"from":                   true,
