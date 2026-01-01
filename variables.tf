@@ -98,13 +98,13 @@ variable "vercel_nameservers" {
 }
 
 # ==============================================================================
-# Resend Configuration
+# Resend Configuration (DEPRECATED - migrated to SES)
 # ==============================================================================
 
 variable "resend_enabled" {
-  description = "Enable Resend email DNS configuration for sending emails via subdomain"
+  description = "Enable Resend email DNS configuration for sending emails via subdomain (DEPRECATED - use SES sending instead)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "resend_subdomain" {
@@ -117,4 +117,20 @@ variable "resend_dkim_key" {
   description = "DKIM public key from Resend dashboard. Get this from Resend after adding your domain."
   type        = string
   default     = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDE21Hhd1tNJgVHBeaT4gZ8rVAfsgRbepNxAip3pvOdG/cwWGg3AGDrdKXQXiqerr5TX9NMfxbH+bj1IuQdp3VEmClgrXi0DtmZyfy5ZknzUHwT5g9cmMjAFTC++TWvUHBgC/JPr2cRBuMnMMVimbvg0aKIOptVTMqy5jjGmWAkjQIDAQAB"
+}
+
+# ==============================================================================
+# SES Sending Domain Configuration
+# ==============================================================================
+
+variable "ses_sending_enabled" {
+  description = "Enable SES sending domain DNS configuration (e.g., mail.polarisaistudio.com)"
+  type        = bool
+  default     = true
+}
+
+variable "ses_sending_subdomain" {
+  description = "Subdomain for SES sending email (e.g., 'mail' creates mail.polarisaistudio.com)"
+  type        = string
+  default     = "mail"
 }

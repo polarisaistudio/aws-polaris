@@ -152,3 +152,69 @@ resource "aws_route53_record" "resend_dkim" {
   ttl     = 300
   records = [var.resend_dkim_key]
 }
+
+# ==============================================================================
+# SES Sending Domain DNS Records
+# ==============================================================================
+# Configures DNS records for sending email via AWS SES using a subdomain
+# (e.g., mail.polarisaistudio.com)
+
+# Domain verification TXT record for sending subdomain
+resource "aws_route53_record" "ses_sending_verification" {
+  count   = var.ses_sending_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "_amazonses.${var.ses_sending_subdomain}.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 600
+  records = [var.ses_sending_verification_token]
+}
+
+# DKIM CNAME records for sending subdomain (3 required)
+resource "aws_route53_record" "ses_sending_dkim" {
+  count   = var.ses_sending_enabled ? 3 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "${var.ses_sending_dkim_tokens[count.index]}._domainkey.${var.ses_sending_subdomain}.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["${var.ses_sending_dkim_tokens[count.index]}.dkim.amazonses.com"]
+}
+
+# SPF record for sending subdomain
+resource "aws_route53_record" "ses_sending_spf" {
+  count   = var.ses_sending_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "${var.ses_sending_subdomain}.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+# Mail-from MX record (for bounce handling)
+resource "aws_route53_record" "ses_sending_mail_from_mx" {
+  count   = var.ses_sending_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "bounce.${var.ses_sending_subdomain}.${var.domain_name}"
+  type    = "MX"
+  ttl     = 600
+  records = ["10 feedback-smtp.${var.aws_region}.amazonses.com"]
+}
+
+# Mail-from SPF record
+resource "aws_route53_record" "ses_sending_mail_from_spf" {
+  count   = var.ses_sending_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "bounce.${var.ses_sending_subdomain}.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+# DMARC record for sending subdomain
+resource "aws_route53_record" "ses_sending_dmarc" {
+  count   = var.ses_sending_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "_dmarc.${var.ses_sending_subdomain}.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=DMARC1; p=quarantine; rua=mailto:postmaster@${var.domain_name}"]
+}

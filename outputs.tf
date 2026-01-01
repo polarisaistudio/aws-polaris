@@ -73,3 +73,33 @@ output "verification_instructions" {
   description = "Instructions for verifying email addresses"
   value       = module.email_forwarding.verification_instructions
 }
+
+# ==============================================================================
+# SES Sending Domain Outputs
+# ==============================================================================
+
+output "ses_sending_domain" {
+  description = "The SES sending domain (e.g., mail.polarisaistudio.com)"
+  value       = module.ses_sending.domain
+}
+
+output "ses_sending_domain_arn" {
+  description = "ARN of the SES sending domain identity"
+  value       = module.ses_sending.domain_identity_arn
+}
+
+output "ses_sending_access_key_id" {
+  description = "AWS Access Key ID for SES sending (use in application)"
+  value       = module.ses_sending.ses_access_key_id
+}
+
+output "ses_sending_secret_access_key" {
+  description = "AWS Secret Access Key for SES sending (use in application)"
+  value       = module.ses_sending.ses_secret_access_key
+  sensitive   = true
+}
+
+output "ses_sending_iam_user_arn" {
+  description = "ARN of the IAM user for SES sending"
+  value       = module.ses_sending.iam_user_arn
+}

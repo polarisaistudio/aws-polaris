@@ -16,6 +16,14 @@ module "email_forwarding" {
   tags                 = var.tags
 }
 
+# SES Sending Domain Module (for application email sending)
+module "ses_sending" {
+  source = "./modules/ses-sending"
+
+  domain_name = var.domain_name
+  subdomain   = var.ses_sending_subdomain
+}
+
 # DNS Module
 module "dns" {
   source = "./modules/dns"
@@ -31,8 +39,14 @@ module "dns" {
   vercel_subdomain   = var.vercel_subdomain
   vercel_nameservers = var.vercel_nameservers
 
-  # Resend configuration
+  # Resend configuration (disabled - migrated to SES)
   resend_enabled   = var.resend_enabled
   resend_subdomain = var.resend_subdomain
   resend_dkim_key  = var.resend_dkim_key
+
+  # SES sending domain configuration
+  ses_sending_enabled            = var.ses_sending_enabled
+  ses_sending_subdomain          = var.ses_sending_subdomain
+  ses_sending_verification_token = module.ses_sending.verification_token
+  ses_sending_dkim_tokens        = module.ses_sending.dkim_tokens
 }

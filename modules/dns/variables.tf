@@ -63,3 +63,31 @@ variable "resend_dkim_key" {
   type        = string
   default     = ""
 }
+
+# ==============================================================================
+# SES Sending Domain Configuration
+# ==============================================================================
+
+variable "ses_sending_enabled" {
+  description = "Enable SES sending domain DNS configuration (mail.polarisaistudio.com)"
+  type        = bool
+  default     = false
+}
+
+variable "ses_sending_subdomain" {
+  description = "Subdomain for SES sending (e.g., 'mail' for mail.domain.com)"
+  type        = string
+  default     = "mail"
+}
+
+variable "ses_sending_verification_token" {
+  description = "SES domain verification token for sending subdomain"
+  type        = string
+  default     = ""
+}
+
+variable "ses_sending_dkim_tokens" {
+  description = "DKIM tokens from SES for sending subdomain (3 required)"
+  type        = list(string)
+  default     = []
+}
